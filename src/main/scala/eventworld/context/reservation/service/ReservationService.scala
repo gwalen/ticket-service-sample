@@ -6,14 +6,11 @@ import akka.event.Logging
 import akka.stream.Materializer
 import eventworld.common.database.BaseDb.driver.api._
 import eventworld.context.reservation.domian._
-import eventworld.context.reservation.domian.dto.CancelReservationFailed
-import eventworld.context.reservation.domian.dto.CancelReservationSuccessful
+import eventworld.context.reservation.domian.dto.CreateReservationFailed
+import eventworld.context.reservation.domian.dto.CreateReservationSuccessful
 import eventworld.context.reservation.domian.dto.ReservationCreateRequest
 import eventworld.context.reservation.domian.dto.ReservationCreateResponse
 import eventworld.context.reservation.domian.dto.ReservationExtendRequest
-import eventworld.context.reservation.domian.dto.CreateReservationFailed
-import eventworld.context.reservation.domian.dto.CreateReservationSuccessful
-import eventworld.context.reservation.domian.dto.ReservationCancelResponse
 import eventworld.context.reservation.repository.ReservationRepository
 
 import scala.concurrent.ExecutionContext
@@ -49,13 +46,9 @@ class ReservationService(
     db.run(reservationRepository.updateReservationExpiryDate(request.reservationId, request.newExpiryDate)).map(_ => Done)
   }
 
-  def cancelReservation(reservationId: Long): Future[ReservationCancelResponse] = {
+  def cancelReservation(reservationId: Long): Future[Done] = {
     logger.info(s"Cancel reservation : $reservationId")
-    db.run(reservationRepository.remove(reservationId))
-      .map {
-        case rowsAffected if rowsAffected == 0 => CancelReservationFailed
-        case rowsAffected if rowsAffected > 0  => CancelReservationSuccessful
-      }
+    db.run(reservationRepository.remove(reservationId)).map(_ => Done)
   }
 
   def findReservations(): Future[Seq[Reservation]] = {

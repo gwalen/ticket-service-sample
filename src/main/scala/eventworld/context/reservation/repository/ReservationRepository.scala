@@ -10,6 +10,10 @@ import slick.lifted.TableQuery
 import slick.dbio.Effect
 import slick.dbio.Effect
 import slick.dbio.Effect
+import slick.dbio.Effect
+import slick.dbio.Effect
+import slick.dbio.Effect
+import slick.dbio.Effect
 import slick.sql.FixedSqlAction
 import slick.sql.FixedSqlStreamingAction
 import slick.sql.SqlAction
@@ -25,11 +29,13 @@ class ReservationRepository()(implicit ec: ExecutionContext) {
    * creates new reservation if max number of ticket per event is not exceeded.
    * to make reservations atomic with max reserved ticket number check we have an extra table reservation_counters
    */
-  def insertWithMaxReservationCheck(reservation: Reservation): DBIOAction[Int, NoStream, Effect.Write] =
-    for {
+//  def insertWithMaxReservationCheck(reservation: Reservation): DBIOAction[Int, NoStream, Effect.Write] = {
+  def insertWithMaxReservationCheck(reservation: Reservation): DBIOAction[Int, NoStream, Effect with Effect.Write with Effect.Transactional] = {
+    (for {
       affected <- updateWithCounterIncrementQuery(reservation.eventId, reservation.ticketCount)
       _        <- reservations += reservation
-    } yield affected
+    } yield affected).transactionally
+  }
 
   def remove(reservationId: Long): DBIOAction[Int, NoStream, Effect.Read with Effect with Effect.Write] = {
     for {
@@ -42,11 +48,11 @@ class ReservationRepository()(implicit ec: ExecutionContext) {
   def updateReservationExpiryDate(reservationId: Long, newExpiryDate: Instant): DBIOAction[Int, NoStream, Effect.Write] =
     reservations.filter(_.id === reservationId).map(_.expiryDate).update(newExpiryDate)
 
-  def findAllReservations(): FixedSqlStreamingAction[Seq[Reservation], Reservation, Effect.Read] =
-    reservations.result
+  def findAllReservations(): DBIOAction[Seq[Reservation], NoStream, Effect.Read] =
+    reservations.result.map(identity(_))
 
-  def findAllReservationsForEvent(eventId: Long): FixedSqlStreamingAction[Seq[Reservation], Reservation, Effect.Read] =
-    reservations.filter(_.eventId === eventId).result
+  def findAllReservationsForEvent(eventId: Long): DBIOAction[Seq[Reservation], NoStream, Effect.Read] =
+    reservations.filter(_.eventId === eventId).result.map(identity(_))
 
   private def updateWithCounterIncrementQuery(eventId: Long, ticketsToReserve: Long): SqlAction[Int, NoStream, Effect] =
     sqlu"""update table ${ReservationCounters.tableName} as r
