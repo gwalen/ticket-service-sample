@@ -7,12 +7,13 @@ import slick.lifted.Tag
 
 class ReservationCounters(tag: Tag) extends Table[ReservationCounter](tag, ReservationCounters.tableName) {
 
-  def eventId: Rep[Long]         = column[Long]("event_id", O.PrimaryKey)
-  def maxTickets: Rep[Long]      = column[Long]("max_tickets")
-  def reservedTickets: Rep[Long] = column[Long]("reserved_tickets")
+  def eventId: Rep[Long]             = column[Long]("event_id", O.PrimaryKey)
+  def maxTickets: Rep[Long]          = column[Long]("max_tickets")
+  def reservedTickets: Rep[Long]     = column[Long]("reserved_tickets")
+  def maxTicketsPerClient: Rep[Long] = column[Long]("max_tickets_per_client")
 
   override def * : ProvenShape[ReservationCounter] =
-    (eventId, maxTickets, reservedTickets) <> ((ReservationCounter.apply _).tupled, ReservationCounter.unapply)
+    (eventId, maxTickets, reservedTickets, maxTicketsPerClient) <> ((ReservationCounter.apply _).tupled, ReservationCounter.unapply)
 }
 
 object ReservationCounters {

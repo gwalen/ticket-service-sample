@@ -5,9 +5,9 @@ import java.time.Instant
 import akka.Done
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import eventworld.context.reservation.domian.Reservation
-import eventworld.context.reservation.domian.dto.CreateReservationFailed
-import eventworld.context.reservation.domian.dto.CreateReservationSuccessful
+import eventworld.context.reservation.domian.ReservationCounter
 import eventworld.context.reservation.domian.dto.ReservationCreateRequest
+import eventworld.context.reservation.domian.dto.ReservationCreateResponses
 import eventworld.context.reservation.domian.dto.ReservationExtendRequest
 import eventworld.context.reservation.repository.ReservationRepository
 import org.scalamock.scalatest.MockFactory
@@ -22,22 +22,51 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
 
   override def testConfig = testConf
 
-  it should "return success when on insert affected rows > 1" in {
+  it should "return success during reservation when no error" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, 1000, 1, Instant.now))
+    val eventId = 1000
+    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
+    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
+    (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(1))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe CreateReservationSuccessful
+    //TODO: fix test --> add stub for db check if client has reservations
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.Successful
   }
 
-  it should "return failure when on insert affected rows == 0 (update condition was not met)" in {
+  it should "return failure during reservation when insert affected rows == 0 (update condition was not met - not enough tickets)" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, 1000, 1, Instant.now))
+    val eventId = 1000
+    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
+    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
+    (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(0))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe CreateReservationFailed
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.NotEnoughTickets
+  }
+
+  it should "return failure during reservation when no reservation counter found" in {
+    val reservationRepositoryStub = stub[ReservationRepository]
+    val reservationService = new ReservationService(reservationRepositoryStub, testDb)
+    val eventId = 1000
+    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
+    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
+
+    (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(None))
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.EventReservationsNotFound
+  }
+
+  it should "return failure during reservation when clients wants to many tickets" in {
+    val reservationRepositoryStub = stub[ReservationRepository]
+    val reservationService = new ReservationService(reservationRepositoryStub, testDb)
+    val eventId = 1000
+    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 10, Instant.now))
+    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
+
+    (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.TooManyTicketsForClient
   }
 
   it should "return correct result when removal was successful" in {

@@ -19,8 +19,9 @@ class ReservationRouter(reservationService: ReservationService)(implicit ex: Exe
   val routes: Route =
     pathPrefix("reservations") {
       (post & pathEndOrSingleSlash & entity(as[ReservationCreateRequest]) ) { request =>
+        //TODO: map to extedend message with 402 (BadRequest messages on error)
         complete(reservationService.createReservation(request).map(OK -> _))
-      } ~ (put & pathEndOrSingleSlash & entity(as[ReservationExtendRequest])) { request =>
+      } ~ (patch & pathEndOrSingleSlash & entity(as[ReservationExtendRequest])) { request =>
         complete(reservationService.extendReservation(request).map(OK -> _))
       } ~ (get & pathEndOrSingleSlash ) {
         complete(reservationService.findReservations().map(OK -> _))
