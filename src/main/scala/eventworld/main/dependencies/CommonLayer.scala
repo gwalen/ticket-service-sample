@@ -13,7 +13,6 @@ trait CommonLayer { self =>
 
   implicit val system: ActorSystem
   implicit def executor: ExecutionContext
-//  implicit val materializer: Materializer
 
   lazy val config: Config                  = ConfigFactory.load("application-env")
   implicit lazy val logger: LoggingAdapter = system.log

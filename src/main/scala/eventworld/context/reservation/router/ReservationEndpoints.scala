@@ -8,9 +8,9 @@ import io.circe.generic.auto._
 import sttp.tapir._
 import sttp.tapir.json.circe._
 
-object ReservationEndpointTapir {
+object ReservationEndpoints {
 
-  val baseEndpoint: Endpoint[Unit, String, Unit, Nothing] = endpoint.errorOut(stringBody).in("reservationsV2")
+  val baseEndpoint: Endpoint[Unit, String, Unit, Nothing] = endpoint.errorOut(stringBody).in("reservations")
 
   val createReservation: Endpoint[ReservationCreateRequest, String, String, Nothing] = baseEndpoint.post
     .in(jsonBody[ReservationCreateRequest])
