@@ -6,6 +6,6 @@ import eventworld.context.reservation.router.ReservationRouter
 import eventworld.context.reservation.router.ReservationRouter
 
 trait HttpComponents { self: CommonLayer with BusinessLogicComponents =>
-  lazy val healthRouter: HealthRouter                     = wire[HealthRouter]
+  lazy val healthRouter: HealthRouter                = wire[HealthRouter]
   lazy val reservationRouterTapir: ReservationRouter = wire[ReservationRouter]
 }

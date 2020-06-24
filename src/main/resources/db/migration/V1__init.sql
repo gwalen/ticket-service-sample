@@ -20,5 +20,7 @@ create unique index uidx_event_id_client_id on reservations(event_id, client_id)
 
 -- test data
 insert into reservation_counters(event_id, max_tickets, reserved_tickets, max_tickets_per_client) VALUES(1000, 500, 0, 5);
+insert into reservation_counters(event_id, max_tickets, reserved_tickets, max_tickets_per_client) VALUES(1001, 100, 0, 10);
 insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10001, 100, 1000, 1, '2020-06-29 23:38:12');
-insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10002, 100, 1000, 1, '2020-06-29 23:38:12');
+insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10002, 101, 1000, 1, '2020-06-29 23:38:12');
+insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10003, 101, 1001, 1, '2020-06-29 23:38:12');

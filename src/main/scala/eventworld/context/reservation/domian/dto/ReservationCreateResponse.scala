@@ -1,7 +1,5 @@
 package eventworld.context.reservation.domian.dto
 
-//TODO: raname to  reservation ReservationCreateResult
-// create ReservationCreateResponse(result: String) which will be mapped from ReservationCreateResult
 sealed trait ReservationCreateResponse
 
 object ReservationCreateResponses {

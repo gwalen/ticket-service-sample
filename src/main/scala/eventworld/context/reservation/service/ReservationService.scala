@@ -18,30 +18,22 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Either
 
-//TODO: rename packages:
-// router -> restapi
-// service -> application
-// repository -> persistance (?)
-
-//TODO: handle (or write how to) reservations expiry
-
-//TODO: readme.md with explanation of example http requests (import them to curl from postman and add to readme)
-
 class ReservationService(reservationRepository: ReservationRepository, db: Database)(implicit ec: ExecutionContext, mat: Materializer, system: ActorSystem) {
 
   private val logger = Logging(system, getClass)
 
-  def createReservation(request: ReservationCreateRequest): Future[ReservationCreateResponse] = {
+  def createReservation(request: ReservationCreateRequest): Future[Either[String, String]] = {
     logger.info(s"Create reservation for: $request")
+    val reservation = Reservation.from(request.reservationDto)
     val createResult = for {
-      reservationCounter <- findReservationCounter(request.reservation.eventId)
-      _                  <- checkMaxNumberOfTicketsForClient(request.reservation, reservationCounter)
-      result             <- addReservation(request.reservation)
+      reservationCounter <- findReservationCounter(reservation.eventId)
+      _                  <- checkMaxNumberOfTicketsForClient(reservation, reservationCounter)
+      result             <- addReservation(reservation)
     } yield result
 
     createResult.value.map {
-      case Right(r) => r
-      case Left(l)  => l
+      case Right(r) => Right(r.toString)
+      case Left(l)  => Left(l.toString)
     }
   }
 
@@ -55,12 +47,8 @@ class ReservationService(reservationRepository: ReservationRepository, db: Datab
     db.run(reservationRepository.remove(reservationId)).map(_ => Done)
   }
 
-  def findAllReservations(): Future[List[Reservation]] = {
-    logger.info(s"Get all reservations")
-    db.run(reservationRepository.findAllReservations()).map(_.toList)
-  }
-
-  def findAllReservationsUnit(x: Unit): Future[List[Reservation]] = {
+  //unit type arg added to be able to chain Functions (Function1 with andThen() method)
+  def findAllReservations(x: Unit): Future[List[Reservation]] = {
     logger.info(s"Get all reservations")
     db.run(reservationRepository.findAllReservations()).map(_.toList)
   }

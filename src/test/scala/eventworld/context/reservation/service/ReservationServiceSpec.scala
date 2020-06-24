@@ -8,6 +8,7 @@ import eventworld.context.reservation.domian.Reservation
 import eventworld.context.reservation.domian.ReservationCounter
 import eventworld.context.reservation.domian.dto.ReservationCreateRequest
 import eventworld.context.reservation.domian.dto.ReservationCreateResponses
+import eventworld.context.reservation.domian.dto.ReservationDto
 import eventworld.context.reservation.domian.dto.ReservationExtendRequest
 import eventworld.context.reservation.repository.ReservationRepository
 import org.scalamock.scalatest.MockFactory
@@ -30,7 +31,7 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(1))
     (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.Successful
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe Right(ReservationCreateResponses.Successful.toString)
   }
 
   it should "return failure during reservation client has already created a reservation for an event" in {
@@ -41,7 +42,7 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(1))
     (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.ClientAlreadyHasReservationForEvent
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe Left(ReservationCreateResponses.ClientAlreadyHasReservationForEvent.toString)
   }
 
   it should "return failure during reservation when insert affected rows == 0 (update condition was not met - not enough tickets)" in {
@@ -52,27 +53,27 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(0))
     (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
 
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.NotEnoughTickets
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe Left(ReservationCreateResponses.NotEnoughTickets.toString)
   }
 
   it should "return failure during reservation when no reservation counter found" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
     val eventId = 1000
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
+    val reservationCreateRequest = ReservationCreateRequest(ReservationDto(100, eventId, 1))
     val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(None))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.EventReservationsNotFound
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe Left(ReservationCreateResponses.EventReservationsNotFound.toString)
   }
 
   it should "return failure during reservation when clients wants to many tickets" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 10, Instant.now))
+    val reservationCreateRequest = ReservationCreateRequest(ReservationDto(100, eventId, 10))
 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
-    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.TooManyTicketsForClient
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe Left(ReservationCreateResponses.TooManyTicketsForClient.toString)
   }
 
   it should "return correct result when removal was successful" in {
@@ -106,7 +107,7 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
 object ReservationServiceSpec {
   val eventId = 1000
   val clientId = 100
-  val reservationCreateRequest = ReservationCreateRequest(Reservation(10, clientId, eventId, 1, Instant.now))
+  val reservationCreateRequest = ReservationCreateRequest(ReservationDto(clientId, eventId, 1))
   val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
   val clientReservations = Seq()
 }

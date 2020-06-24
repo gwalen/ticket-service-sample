@@ -14,7 +14,7 @@ class Reservations(tag: Tag) extends Table[Reservation](tag, Reservations.tableN
   def ticketCount: Rep[Int]    = column[Int]("ticket_count")
   def expiryDate: Rep[Instant] = column[Instant]("expiry_date")
 
-  override def * : ProvenShape[Reservation] = (id, clientId, eventId, ticketCount, expiryDate) <> (Reservation.tupled, Reservation.unapply)
+  override def * : ProvenShape[Reservation] = (id, clientId, eventId, ticketCount, expiryDate) <> ((Reservation.apply _).tupled, Reservation.unapply)
 }
 
 object Reservations {

@@ -3,6 +3,7 @@ package eventworld.context.reservation.router
 import akka.Done
 import eventworld.context.reservation.domian.Reservation
 import eventworld.context.reservation.domian.dto.ReservationCreateRequest
+import eventworld.context.reservation.domian.dto.ReservationCreateResponse
 import eventworld.context.reservation.domian.dto.ReservationExtendRequest
 import io.circe.generic.auto._
 import sttp.tapir._
