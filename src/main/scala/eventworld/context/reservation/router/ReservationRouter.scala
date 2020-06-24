@@ -24,7 +24,7 @@ class ReservationRouter(reservationService: ReservationService)(implicit ex: Exe
         complete(reservationService.extendReservation(request).map(OK -> _))
       } ~ (get & pathEndOrSingleSlash ) {
         complete(reservationService.findAllReservations().map(OK -> _))
-      }~ (get & path("unit") & pathEndOrSingleSlash ) {
+      } ~ (get & path("unit") & pathEndOrSingleSlash ) { //TODO: remove
         complete(reservationService.findAllReservationsUnit().map(OK -> _))
       } ~ (get & path("events" / LongNumber) & pathEndOrSingleSlash ) { eventId =>
         complete(reservationService.findReservations(eventId).map(OK -> _))

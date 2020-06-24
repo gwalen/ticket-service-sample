@@ -1,7 +1,7 @@
 import sbt._
 
 object Versions {
-  val akkaV          = "2.5.26"
+  val akkaV          = "2.6.6"
   val akkaHttpV      = "10.1.12"
   val postgresqlV    = "42.2.5"
   val slickV         = "3.3.2"
