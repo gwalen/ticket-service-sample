@@ -17,3 +17,8 @@ CREATE TABLE IF NOT EXISTS reservation_counters (
 -- we could validate it in run-time with summarizing all client reservations in separate query but thean we could have a race condition when
 -- multiple requests for reservation would come for the same event and client
 create unique index uidx_event_id_client_id on reservations(event_id, client_id);
+
+-- test data
+insert into reservation_counters(event_id, max_tickets, reserved_tickets, max_tickets_per_client) VALUES(1000, 500, 0, 5);
+insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10001, 100, 1000, 1, '2020-06-29 23:38:12');
+insert into reservations(id, client_id, event_id, ticket_count, expiry_date) values(10002, 100, 1000, 1, '2020-06-29 23:38:12');

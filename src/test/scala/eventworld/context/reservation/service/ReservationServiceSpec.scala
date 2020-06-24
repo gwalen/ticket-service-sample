@@ -19,31 +19,39 @@ import slick.dbio.DBIOAction
 
 class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory with ScalaFutures with ScalatestRouteTest { spec =>
   import utils.ConfigSpec._
+  import ReservationServiceSpec._
 
   override def testConfig = testConf
 
   it should "return success during reservation when no error" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val eventId = 1000
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
-    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(1))
-    //TODO: fix test --> add stub for db check if client has reservations
+    (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
     reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.Successful
+  }
+
+  it should "return failure during reservation client has already created a reservation for an event" in {
+    val reservationRepositoryStub = stub[ReservationRepository]
+    val reservationService = new ReservationService(reservationRepositoryStub, testDb)
+    val clientReservations = Seq(Reservation(11, clientId, eventId, 1, Instant.now))
+
+    (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
+    (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(1))
+    (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
+    reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.ClientAlreadyHasReservationForEvent
   }
 
   it should "return failure during reservation when insert affected rows == 0 (update condition was not met - not enough tickets)" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val eventId = 1000
-    val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 1, Instant.now))
-    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     (reservationRepositoryStub.insertWithMaxReservationCheck(_: Reservation)).when(*).returns(DBIOAction.successful(0))
+    (reservationRepositoryStub.findReservationsForClient(_: Long, _: Long)).when(*, *).returns(DBIOAction.successful(clientReservations))
+
     reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.NotEnoughTickets
   }
 
@@ -61,9 +69,7 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
   it should "return failure during reservation when clients wants to many tickets" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-    val eventId = 1000
     val reservationCreateRequest = ReservationCreateRequest(Reservation(10, 100, eventId, 10, Instant.now))
-    val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
 
     (reservationRepositoryStub.findReservationCounter(_: Long)).when(*).returns(DBIOAction.successful(Option(reservationCounter)))
     reservationService.createReservation(reservationCreateRequest).futureValue shouldBe ReservationCreateResponses.TooManyTicketsForClient
@@ -89,11 +95,18 @@ class ReservationServiceSpec extends AnyFlatSpec with Matchers with MockFactory 
   it should "return correct result when find query was successful" in {
     val reservationRepositoryStub = stub[ReservationRepository]
     val reservationService = new ReservationService(reservationRepositoryStub, testDb)
-
     val reservationsFromDb = Seq(Reservation(1, 1, 1, 1, Instant.MAX))
 
     (reservationRepositoryStub.findAllReservations _).when().returns(DBIOAction.successful(reservationsFromDb))
-    reservationService.findReservations().futureValue shouldBe reservationsFromDb
+    reservationService.findAllReservations().futureValue shouldBe reservationsFromDb
   }
 
+}
+
+object ReservationServiceSpec {
+  val eventId = 1000
+  val clientId = 100
+  val reservationCreateRequest = ReservationCreateRequest(Reservation(10, clientId, eventId, 1, Instant.now))
+  val reservationCounter = ReservationCounter(eventId, 500, 0, 5)
+  val clientReservations = Seq()
 }

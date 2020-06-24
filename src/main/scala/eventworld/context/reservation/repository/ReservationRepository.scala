@@ -19,14 +19,11 @@ class ReservationRepository()(implicit ec: ExecutionContext) {
    * creates new reservation if max number of ticket per event is not exceeded.
    * to make reservations atomic with max reserved ticket number check we have an extra table reservation_counters
    */
-//  def insertWithMaxReservationCheck(reservation: Reservation): DBIOAction[Int, NoStream, Effect.Write] = {
   def insertWithMaxReservationCheck(reservation: Reservation): DBIOAction[Int, NoStream, Effect with Effect.Write with Effect.Transactional] = {
-    val a = (for {
+    (for {
       affected <- updateWithCounterIncrementQuery(reservation.eventId, reservation.ticketCount)
       _        <- reservations += reservation
     } yield affected).transactionally
-//    a.state
-    a
   }
 
   def remove(reservationId: Long): DBIOAction[Int, NoStream, Effect.Read with Effect with Effect.Write] = {

@@ -18,12 +18,13 @@ object Versions {
   val circeV         = "0.13.0"
   val akkaHttpCirceV = "1.33.0"
   val h2V            = "1.4.196"
+  val tapirV         = "0.16.1"
 }
 
 object Dependencies {
   import Versions._
 
-  lazy val allDependencies: Seq[ModuleID] = akkaBase ++ akkaHttp ++ slick ++ macwire ++ logback ++ test ++ others
+  lazy val allDependencies: Seq[ModuleID] = akkaBase ++ akkaHttp ++ slick ++ macwire ++ logback ++ test ++ tapir ++ others
 
   private lazy val akkaBase = Seq(
     "com.typesafe.akka" %% "akka-actor"        % akkaV,
@@ -62,6 +63,15 @@ object Dependencies {
     "org.scalatest"  %% "scalatest" % scalaTestV % "test",
     "org.scalamock"  %% "scalamock" % scalaMockV % "test",
     "com.h2database" % "h2"         % h2V        % "test"
+  )
+
+  private lazy val tapir = Seq(
+    "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirV,
+    "com.softwaremill.sttp.tapir" %% "tapir-akka-http-server" % tapirV,
+    "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % tapirV,
+    "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirV,
+    "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-akka-http" % tapirV,
+    "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirV
   )
 
   private lazy val others = Seq(

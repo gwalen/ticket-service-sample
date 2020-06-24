@@ -1,6 +1,5 @@
 package eventworld.context.reservation.router
 
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -24,7 +23,9 @@ class ReservationRouter(reservationService: ReservationService)(implicit ex: Exe
       } ~ (patch & pathEndOrSingleSlash & entity(as[ReservationExtendRequest])) { request =>
         complete(reservationService.extendReservation(request).map(OK -> _))
       } ~ (get & pathEndOrSingleSlash ) {
-        complete(reservationService.findReservations().map(OK -> _))
+        complete(reservationService.findAllReservations().map(OK -> _))
+      }~ (get & path("unit") & pathEndOrSingleSlash ) {
+        complete(reservationService.findAllReservationsUnit().map(OK -> _))
       } ~ (get & path("events" / LongNumber) & pathEndOrSingleSlash ) { eventId =>
         complete(reservationService.findReservations(eventId).map(OK -> _))
       } ~ (delete & path(Segment) & pathEndOrSingleSlash) { reservationId =>
